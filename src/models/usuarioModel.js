@@ -10,7 +10,7 @@ const usuarioSchema = new mongoose.Schema({
     telefono: { type: String, required: false },
     publicaciones: [
         {
-            nombrePublicacion: { type: String, required: false }
+            nombrePublicacion: { type: String, required: false,unique: true }
         }
     ]
 });

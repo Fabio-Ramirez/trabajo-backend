@@ -29,12 +29,12 @@ export const registerPublicacion = async (req, res) => {
         }
 
         // Crear un nuevo publicacion
-        //console.log("publicacion: ",req.body)
+        //console.log("usuarioBuscado: ",usuarioBuscado)
         const newPublicacion = new Publicacion({ descripcion, fecha, imagen, hora, ubicacion });
 
-        const existePublicacion = await Publicacion.findOne({ descripcion: descripcion })
-        if (existePublicacion) {
-            return res.status(400).json({ message: 'Ya existe ese publicacion' });
+        const existePublicacionEnUsuario = await usuarioBuscado.publicaciones.find( publicacion => publicacion.nombrePublicacion === descripcion )
+        if (existePublicacionEnUsuario) {
+            return res.status(400).json({ message: 'Ya existe esa publicacion en el usuario' });
         }
 
         //Se arma el objeto para insertarlo en la bd de Usuario

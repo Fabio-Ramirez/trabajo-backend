@@ -5,14 +5,14 @@ const usuarioSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },//dato como clave y requerido
     password: { type: String, required: true, unique: true },//dato como clave y requerido
     email: { type: String, required: true, unique: true },//dato como clave y requerido
-    dni: { type: Number, required: true, unique: true },
+    dni: { type: Number, required: false, unique: true },
     fechaRegistro: { type: Object, required: false },
     telefono: { type: String, required: false },
-    publicaciones: [
+    /*publicaciones: [
         {
-            nombrePublicacion: { type: String, required: false,unique: true }
+            nombrePublicacion: { type: String, required: false, unique: true }
         }
-    ]
+    ]*/
 });
 
 const Usuario = mongoose.model('Usuario', usuarioSchema);

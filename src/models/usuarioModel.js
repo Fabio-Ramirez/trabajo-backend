@@ -10,7 +10,8 @@ const usuarioSchema = new mongoose.Schema({
         required: false,
         enum: ['administrador', 'estandar'],
         default: 'estandar'
-    }
+    },
+    imagenUrl: { type: String, required: false }
 }, {
     timestamps: true // Habilitar timestamps para createdAt y updatedAt
 });

@@ -4,6 +4,7 @@ import redis from 'redis';
 import axios from 'axios';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 const client = redis.createClient({ url: "redis://31.187.76.251:6379" });
 
 client.on('connect', () => {
@@ -32,12 +33,32 @@ export const getUsuarios = async (req, res) => {
 //Obtener un usuario
 export const getUsuario = async (req, res) => {
     try {
-        const { username } = req.params;
-        // Obtener todos los usuarios de la base de datos
-        const usuario = await Usuario.find({ username: username });
+        const { id } = req.params;
 
-        // Enviar una respuesta al cliente
-        res.status(200).json(usuario);
+        // Verificar si el ID proporcionado es válido
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: 'ID de usuario no válido' });
+        }
+
+        // Buscar el usuario por ID en la base de datos
+        const usuario = await Usuario.findById(id);
+
+        // Verificar si el usuario existe
+        if (!usuario) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+        // hashing the password
+        const passwordHash = await bcrypt.hash(usuario.password, 10);
+
+        console.log("pass: ", passwordHash)
+
+        res.json({
+            username: usuario.username,
+            email: usuario.email,
+            password: passwordHash,
+            rol: usuario.rol,
+            imagenUrl: usuario.imagenUrl
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Ha ocurrido un error al obtener los usuarios' });
@@ -51,6 +72,7 @@ export const login = async (req, res) => {
         // Busca el usuario por email
         const usuario = await Usuario.findOne({ email });
 
+        console.log("login user: ", usuario, " ingresos: ", req.body)
         // Si el usuario no existe o la contraseña es incorrecta
         if (!usuario || !bcrypt.compareSync(password, usuario.password)) {
             return res.status(401).json({ message: 'Credenciales incorrectas' });
@@ -59,7 +81,17 @@ export const login = async (req, res) => {
         // Genera el token JWT
         const token = jwt.sign({ id: usuario._id }, 'secreto', { expiresIn: '1h' });
 
-        res.json({ token });
+        res.cookie("token", token, {
+            httpOnly: process.env.NODE_ENV !== "development",
+            secure: true,
+            sameSite: "none",
+        });
+
+        res.json({
+            id: usuario._id,
+            username: usuario.username,
+            email: usuario.email
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error en el servidor' });
@@ -120,6 +152,11 @@ export const registerUsuario = async (req, res) => {
         // Crear un token JWT y enviarlo junto con el mensaje de éxito
         const token = generateJWTToken(newUsuario); // Función para generar un token JWT
 
+        res.cookie("token", token, {
+            httpOnly: process.env.NODE_ENV !== "development",
+            secure: true,
+            sameSite: "none",
+        });
         res.status(201).json({ message: 'Se ha creado con exito el registro del usuario: ' + token });
     } catch (error) {
         console.error(error);
@@ -145,3 +182,45 @@ function generateJWTToken(user) {
     const token = jwt.sign(payload, secretKey, options);
     return token;
 }
+
+//Actualizar un usuario  
+export const updateUsuario = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { username, password, email, rol, imagenUrl } = req.body;
+
+        // Verifica la autenticación del usuario mediante el token JWT
+        const token = req.headers.authorization.split(' ')[1];
+        const decodedToken = jwt.verify(token, 'tu_secreto'); // Reemplaza 'tu_secreto' con tu clave secreta real
+
+        // Comprueba si el usuario autenticado es el mismo que el que se desea actualizar
+        if (decodedToken.id !== id) {
+            return res.status(403).json({ message: 'No tienes permiso para actualizar este usuario.' });
+        }
+
+        // Preparar los datos actualizados
+        const datosActualizados = { username, password, email, rol, imagenUrl };
+
+        // Si la contraseña se proporciona, hashea la nueva contraseña
+        if (password) {
+            datosActualizados.password = await bcrypt.hash(password, 10);
+        }
+
+        // Actualizar el usuario
+        const usuarioActualizado = await Usuario.findByIdAndUpdate(
+            id,
+            datosActualizados,
+            { new: true } // Devuelve el usuario actualizado
+        );
+
+        if (!usuarioActualizado) {
+            return res.status(404).json({ message: 'Usuario no encontrado.' });
+        }
+        // Enviar una respuesta al cliente
+        res.status(200).json({ message: 'Usuario actualizado con éxito', usuario: usuarioActualizado });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Ha ocurrido un error al registrar el usuario', error });
+    }
+};

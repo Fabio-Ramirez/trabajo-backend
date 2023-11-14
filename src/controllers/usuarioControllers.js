@@ -87,6 +87,8 @@ export const login = async (req, res) => {
             sameSite: "none",
         });
 
+        res.header("Authorization", `Bearer ${token}`);
+
         res.json({
             id: usuario._id,
             username: usuario.username,
@@ -169,7 +171,8 @@ function generateJWTToken(user) {
         id: user._id,  // ID del usuario en la base de datos
         email: user.email,  // Correo electrónico del usuario (u otros datos que desees incluir)
         username: user.username, // Nombre de usuario del usuario (u otros datos que desees incluir)
-        rol: user.rol
+        rol: user.rol,
+        imagenUrl: user.imagenUrl
     };
 
     // Firma del token con una clave secreta
@@ -189,20 +192,19 @@ export const updateUsuario = async (req, res) => {
         const { id } = req.params;
         const { username, password, email, rol, imagenUrl } = req.body;
 
-        // Verifica la autenticación del usuario mediante el token JWT
-        const token = req.headers.authorization.split(' ')[1];
-        const decodedToken = jwt.verify(token, 'tu_secreto'); // Reemplaza 'tu_secreto' con tu clave secreta real
+        console.log("user a la api: ", username)
 
-        // Comprueba si el usuario autenticado es el mismo que el que se desea actualizar
-        if (decodedToken.id !== id) {
-            return res.status(403).json({ message: 'No tienes permiso para actualizar este usuario.' });
+        // Verificar si el nuevo username ya existe en otro usuario
+        const existingUser = await Usuario.findOne({ username });
+        if (existingUser && existingUser._id.toString() !== id) {
+            return res.status(400).json({ message: 'Ya existe un usuario con ese username.' });
         }
 
         // Preparar los datos actualizados
         const datosActualizados = { username, password, email, rol, imagenUrl };
 
         // Si la contraseña se proporciona, hashea la nueva contraseña
-        if (password) {
+        if (typeof password === 'string') {
             datosActualizados.password = await bcrypt.hash(password, 10);
         }
 
@@ -224,3 +226,5 @@ export const updateUsuario = async (req, res) => {
         res.status(500).json({ message: 'Ha ocurrido un error al registrar el usuario', error });
     }
 };
+
+

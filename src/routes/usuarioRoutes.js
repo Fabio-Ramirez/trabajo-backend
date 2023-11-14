@@ -2,7 +2,7 @@ import express from 'express';
 import { check } from 'express-validator';
 import { validarCampos } from '../meddlewares/validar-campo.js';
 import { verificarToken } from '../meddlewares/protected.js'
-import { getUsuarios, getUsuario, registerUsuario, getUsuariosRedis, login } from '../controllers/usuarioControllers.js';
+import { getUsuarios, getUsuario, registerUsuario, getUsuariosRedis, login, updateUsuario } from '../controllers/usuarioControllers.js';
 import { getPublicaciones, registerPublicacion } from '../controllers/publicacionControllers.js';
 
 const router = express.Router();
@@ -15,6 +15,8 @@ router.get('/rutaProtegida', verificarToken, (req, res) => {
     // Esta ruta está protegida y solo es accesible con un token válido
     res.json({ message: 'Acceso permitido' });
 });
+
+router.put('/updateUser/:id', verificarToken, updateUsuario)
 
 router.post('/users', registerUsuario);
 router.post('/auth', login);

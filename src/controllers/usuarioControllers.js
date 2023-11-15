@@ -87,12 +87,15 @@ export const login = async (req, res) => {
             sameSite: "none",
         });
 
-        res.header("Authorization", `Bearer ${token}`);
+        res.header("Authorization", `JWT ${token}`);
 
         res.json({
             id: usuario._id,
             username: usuario.username,
-            email: usuario.email
+            email: usuario.email,
+            rol: usuario.rol,
+            imagenUrl: usuario.imagenUrl,
+            token: token
         });
     } catch (error) {
         console.error(error);
@@ -192,10 +195,11 @@ export const updateUsuario = async (req, res) => {
         const { id } = req.params;
         const { username, password, email, rol, imagenUrl } = req.body;
 
-        console.log("user a la api: ", username)
+        console.log("user a la api: ", username, " id: ", id)
 
         // Verificar si el nuevo username ya existe en otro usuario
         const existingUser = await Usuario.findOne({ username });
+        console.log("existe: ", existingUser)
         if (existingUser && existingUser._id.toString() !== id) {
             return res.status(400).json({ message: 'Ya existe un usuario con ese username.' });
         }

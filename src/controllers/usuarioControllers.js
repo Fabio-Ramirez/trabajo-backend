@@ -47,15 +47,11 @@ export const getUsuario = async (req, res) => {
         if (!usuario) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
-        // hashing the password
-        const passwordHash = await bcrypt.hash(usuario.password, 10);
-
-        console.log("pass: ", passwordHash)
 
         res.json({
             username: usuario.username,
             email: usuario.email,
-            password: passwordHash,
+            password: usuario.password,
             rol: usuario.rol,
             imagenUrl: usuario.imagenUrl
         });
@@ -131,7 +127,7 @@ export const getUsuariosRedis = async (req, res) => {
 //Registrar un usuario  
 export const registerUsuario = async (req, res) => {
     try {
-        const { email, password, username, rol } = req.body;
+        const { email, password, username, rol, imagenUrl } = req.body;
 
         // Crear un nuevo usuario
         console.log("usuario a registrar: ", req.body)
@@ -148,7 +144,8 @@ export const registerUsuario = async (req, res) => {
             email,
             password: passwordHash,
             username,
-            rol
+            rol,
+            imagenUrl
         });
 
         await newUsuario.save();
@@ -207,8 +204,10 @@ export const updateUsuario = async (req, res) => {
         // Preparar los datos actualizados
         const datosActualizados = { username, password, email, rol, imagenUrl };
 
+        console.log("password a la api: ", password)
         // Si la contraseña se proporciona, hashea la nueva contraseña
-        if (typeof password === 'string') {
+        if (password !== '' && typeof password === 'string') {
+            console.log("password a la api para cambiar: ", password)
             datosActualizados.password = await bcrypt.hash(password, 10);
         }
 
